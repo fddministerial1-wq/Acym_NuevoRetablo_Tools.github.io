@@ -1,48 +1,33 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lector QR - Acym Nuevo Retablo</title>
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    <style>
-        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background-color: #f0f2f5; }
-        #reader { width: 100%; max-width: 400px; border-radius: 15px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); background: white; }
-        #result { margin-top: 20px; padding: 15px; background: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); width: 80%; max-width: 380px; text-align: center; word-break: break-all; }
-        .btn-scan { padding: 12px 24px; background-color: #1a73e8; color: white; border: none; border-radius: 25px; font-size: 16px; cursor: pointer; transition: background 0.3s; }
-        .btn-scan:hover { background-color: #1557b0; }
-    </style>
-</head>
-<body>
+<script src="https://unpkg.com/html5-qrcode"></script>
 
-    <button id="start-btn" class="btn-scan">Iniciar Escáner</button>
-    <div id="reader" style="display:none;"></div>
-    <div id="result">El resultado aparecerá aquí</div>
+<div style="text-align: center; padding: 20px;">
+    <button id="btn-permiso" style="padding: 15px 30px; font-size: 18px; cursor: pointer; background: #28a745; color: white; border: none; border-radius: 5px;">
+        Habilitar Cámara y Escanear
+    </button>
+    <div id="reader" style="width: 100%; max-width: 500px; margin: 20px auto;"></div>
+    <div id="scanned-result" style="margin-top: 20px; font-weight: bold;"></div>
+</div>
 
-    <script>
-        const html5QrCode = new Html5Qrcode("reader");
-        const startBtn = document.getElementById('start-btn');
-        const resultDiv = document.getElementById('result');
-        const readerDiv = document.getElementById('reader');
-
-        startBtn.addEventListener('click', () => {
-            startBtn.style.display = 'none';
-            readerDiv.style.display = 'block';
+<script>
+    const html5QrCode = new Html5Qrcode("reader");
+    
+    document.getElementById('btn-permiso').addEventListener('click', async () => {
+        try {
+            // Forzamos la petición de permiso antes de iniciar el lector
+            await navigator.mediaDevices.getUserMedia({ video: true });
+            
+            document.getElementById('btn-permiso').style.display = 'none';
             
             html5QrCode.start(
                 { facingMode: "environment" }, 
                 { fps: 10, qrbox: { width: 250, height: 250 } },
-                (decodedText) => {
-                    resultDiv.innerHTML = `<strong>Resultado:</strong><br><a href="${decodedText}" target="_blank">${decodedText}</a>`;
-                    // Opcional: vibrar al escanear
-                    if (navigator.vibrate) navigator.vibrate(100);
-                },
-                (errorMessage) => { /* Ignorar errores de búsqueda constante */ }
-            ).catch(err => {
-                resultDiv.innerHTML = `<span style="color:red">Error: ${err}</span>`;
-                startBtn.style.display = 'block';
-            });
-        });
-    </script>
-</body>
-</html>
+                (text) => {
+                    document.getElementById('scanned-result').innerHTML = `Código: <a href="${text}">${text}</a>`;
+                }
+            ).catch(e => alert("Error al iniciar: " + e));
+            
+        } catch (err) {
+            alert("No se pudo acceder a la cámara. Por favor, revisa los permisos de tu navegador: " + err);
+        }
+    });
+</script>
