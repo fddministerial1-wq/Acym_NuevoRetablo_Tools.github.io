@@ -89,3 +89,16 @@
                     (decodedText) => {
                         resultDiv.innerHTML = `<strong style="color:#00008B;">¡QR Detectado!</strong><br><br><a href="${decodedText}" target="_blank" style="text-decoration:none; color:#1a73e8; font-weight:bold;">${decodedText}</a>`;
                         if (navigator.vibrate) navigator.vibrate(150);
+                    }
+                ).catch(err => {
+                    resultDiv.innerHTML = `<span style="color:red">Error: ${err}</span>`;
+                });
+
+            } catch (err) {
+                resultDiv.innerHTML = `<span style="color:red">Permiso denegado o cámara no encontrada.</span>`;
+                console.error(err);
+            }
+        });
+    </script>
+</body>
+</html>
