@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lector QR - Acym Nuevo Retablo</title>
-    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
         body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            font-family: 'Segoe UI', sans-serif; 
             display: flex; 
             flex-direction: column; 
             align-items: center; 
@@ -23,7 +23,7 @@
             overflow: hidden; 
             box-shadow: 0 8px 30px rgba(0,0,0,0.15); 
             background: white;
-            display: none; /* Se muestra al iniciar */
+            display: none;
         }
         .btn-scan { 
             padding: 16px 32px; 
@@ -34,69 +34,68 @@
             font-size: 18px; 
             font-weight: bold;
             cursor: pointer; 
-            transition: transform 0.2s, background 0.3s;
             box-shadow: 0 4px 15px rgba(0,0,139,0.3);
+            transition: 0.3s;
         }
-        .btn-scan:active {
-            transform: scale(0.95);
-        }
+        .btn-scan:hover { background-color: #000066; }
+        
         #result { 
             margin-top: 25px; 
             padding: 15px; 
             background: white; 
             border-left: 5px solid #00008B;
-            border-radius: 4px; 
             width: 85%; 
             max-width: 400px; 
             text-align: center; 
             word-break: break-all;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
+
+        /* Estilo para mostrar la versión en pantalla */
+        .version-tag {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            font-size: 12px;
+            color: #999;
+            background: rgba(255,255,255,0.7);
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
     </style>
 </head>
 <body>
 
     <button id="start-btn" class="btn-scan">INICIAR ESCÁNER</button>
-    
     <div id="reader"></div>
-    
-    <div id="result">El resultado aparecerá aquí abajo</div>
+    <div id="result">Listo para escanear</div>
+
+    <div class="version-tag">Versión: 1.2</div>
 
     <script>
         const html5QrCode = new Html5Qrcode("reader");
         const startBtn = document.getElementById('start-btn');
         const resultDiv = document.getElementById('result');
-        const readerDiv = document.getElementById('reader');
 
         startBtn.addEventListener('click', async () => {
-            // Intentamos pedir permiso explícito primero
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                stream.getTracks().forEach(track => track.stop()); // Cerramos el stream de prueba
+                resultDiv.innerText = "Solicitando cámara...";
+                await navigator.mediaDevices.getUserMedia({ video: true });
                 
                 startBtn.style.display = 'none';
-                readerDiv.style.display = 'block';
+                document.getElementById('reader').style.display = 'block';
                 
-                const config = { 
-                    fps: 10, 
-                    qrbox: { width: 250, height: 250 },
-                    aspectRatio: 1.0 
-                };
-
                 html5QrCode.start(
                     { facingMode: "environment" }, 
-                    config,
+                    { fps: 10, qrbox: { width: 250, height: 250 } },
                     (decodedText) => {
-                        resultDiv.innerHTML = `<strong style="color:#00008B;">¡QR Detectado!</strong><br><br><a href="${decodedText}" target="_blank" style="text-decoration:none; color:#1a73e8; font-weight:bold;">${decodedText}</a>`;
-                        if (navigator.vibrate) navigator.vibrate(150);
+                        resultDiv.innerHTML = `<strong>¡Leído con éxito!</strong><br><a href="${decodedText}" target="_blank">${decodedText}</a>`;
                     }
                 ).catch(err => {
                     resultDiv.innerHTML = `<span style="color:red">Error: ${err}</span>`;
                 });
-
             } catch (err) {
-                resultDiv.innerHTML = `<span style="color:red">Permiso denegado o cámara no encontrada.</span>`;
-                console.error(err);
+                resultDiv.innerHTML = `<span style="color:red">Permiso denegado. Revisa los ajustes de tu navegador.</span>`;
             }
         });
     </script>
