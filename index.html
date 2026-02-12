@@ -3,66 +3,65 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lector QR v1.4</title>
+    <title>Lector QR v1.5</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: #f4f7f6; color: #333; }
-        #reader { width: 90%; max-width: 400px; display: none; border-radius: 15px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-        .btn-scan { padding: 18px 36px; background: #00008B; color: white; border: none; border-radius: 50px; font-weight: bold; cursor: pointer; font-size: 16px; box-shadow: 0 4px 15px rgba(0,0,139,0.3); }
-        #result { margin-top: 20px; padding: 15px; width: 85%; max-width: 400px; text-align: center; background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); min-height: 50px; }
-        .instructions { display: none; margin-top: 15px; font-size: 13px; color: #666; background: #fff3cd; padding: 10px; border-radius: 8px; border: 1px solid #ffeeba; }
-        .version { margin-top: 20px; font-size: 10px; color: #bbb; text-transform: uppercase; letter-spacing: 1px; }
+        body { font-family: 'Segoe UI', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; background: transparent; }
+        /* Forzamos que el lector ocupe el espacio disponible */
+        #reader { width: 100%; max-width: 400px; min-height: 300px; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.2); background: #000; }
+        .btn-scan { padding: 16px 32px; background: #00008B; color: white; border: none; border-radius: 50px; font-weight: bold; cursor: pointer; font-size: 16px; margin-bottom: 10px; }
+        #result { margin-top: 15px; padding: 12px; width: 85%; text-align: center; background: white; border-radius: 8px; border: 1px solid #ddd; word-break: break-all; }
+        .version { margin-top: 15px; font-size: 10px; color: #888; background: #fff; padding: 2px 8px; border-radius: 10px; border: 1px solid #eee; }
     </style>
 </head>
 <body>
 
-    <button id="start-btn" class="btn-scan">INICIAR ESCÁNER</button>
+    <button id="start-btn" class="btn-scan">ACTIVAR CÁMARA</button>
     
-    <div id="reader"></div>
+    <div id="reader" style="display:none;"></div>
     
-    <div id="result">Toque el botón para comenzar</div>
-
-    <div id="help" class="instructions">
-        <strong>Para solucionar el error:</strong><br>
-        Haz clic en el candado de la barra de direcciones y permite el acceso a la cámara.
-    </div>
+    <div id="result">Presione el botón para escanear asistencia</div>
     
-    <div class="version">v1.4 - Acym Nuevo Retablo</div>
+    <div class="version">v1.5 - Acym Nuevo Retablo</div>
 
     <script>
-        const html5QrCode = new Html5Qrcode("reader");
-        const startBtn = document.getElementById('start-btn');
         const resultDiv = document.getElementById('result');
-        const helpDiv = document.getElementById('help');
+        const startBtn = document.getElementById('start-btn');
+        const readerDiv = document.getElementById('reader');
 
-        startBtn.onclick = async () => {
-            helpDiv.style.display = 'none';
-            try {
-                resultDiv.innerText = "Cargando cámara...";
-                
-                // Intento de acceso directo
-                await navigator.mediaDevices.getUserMedia({ video: true });
+        // Configuración para forzar visibilidad en iframes (Google Sites)
+        const html5QrCode = new Html5Qrcode("reader", { verbose: false });
 
-                startBtn.style.display = 'none';
-                document.getElementById('reader').style.display = 'block';
+        startBtn.onclick = () => {
+            startBtn.style.display = 'none';
+            readerDiv.style.display = 'block';
+            resultDiv.innerText = "Iniciando transmisión...";
 
-                await html5QrCode.start(
-                    { facingMode: "environment" }, 
-                    { fps: 10, qrbox: { width: 250, height: 250 } },
-                    (text) => { 
-                        resultDiv.innerHTML = `<b style="color:#00008B;">¡QR Detectado!</b><br><br><a href="${text}" target="_blank" style="color:#1a73e8;">${text}</a>`; 
-                    }
-                );
-            } catch (err) {
-                console.error(err);
-                if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-                    resultDiv.innerHTML = `<b style="color:red">Permiso denegado</b>`;
-                    helpDiv.style.display = 'block';
-                } else {
-                    resultDiv.innerHTML = `<b>Error:</b> ${err.message}`;
+            const qrConfig = { 
+                fps: 15, 
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0
+            };
+
+            // Intentamos iniciar con la cámara trasera (environment)
+            html5QrCode.start(
+                { facingMode: "environment" }, 
+                qrConfig,
+                (decodedText) => {
+                    resultDiv.innerHTML = `<b style="color:green;">¡Escaneado!</b><br><a href="${decodedText}" target="_blank">${decodedText}</a>`;
+                    // Opcional: Sonido o vibración aquí
                 }
-                startBtn.innerText = "REINTENTAR";
-            }
+            ).catch(err => {
+                console.error(err);
+                // Si falla la trasera (ej. en PC), intentamos con cualquier cámara disponible
+                html5QrCode.start({ facingMode: "user" }, qrConfig, (text) => {
+                    resultDiv.innerHTML = `<b>Resultado:</b> ${text}`;
+                }).catch(err2 => {
+                    resultDiv.innerHTML = `<b style="color:red;">Error de visualización:</b> Asegúrate de que el cuadro en Google Sites sea grande.`;
+                    startBtn.style.display = 'block';
+                    startBtn.innerText = "REINTENTAR";
+                });
+            });
         };
     </script>
 </body>
